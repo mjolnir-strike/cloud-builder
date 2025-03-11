@@ -11,6 +11,7 @@ setup(
         "python-dotenv>=1.0.0",  # Environment variable management
         "pydantic>=2.0.0",  # Data validation
         "typing-extensions>=4.0.0",  # Enhanced typing support
+        "litellm>=1.0.0",  # LLM provider abstraction
     ],
     extras_require={
         "langchain": ["langchain>=0.1.0"],  # Optional LangChain support

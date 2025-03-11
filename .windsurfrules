@@ -5,3 +5,6 @@ You build this application in a way that it can be easily extended and modified
 you will ensure to use the latest stable versions of the dependencies
 you will keep the code simple and easy to understand by adding necessary comments
 you will try to avoid os specific code and use cross platform code
+you will always build and run the code once before commiting and pushing to git.
+you will always write unit test and run them before commiting and pushing to git.
+you will always run the code in a virtual environment.

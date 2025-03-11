@@ -27,6 +27,32 @@ def _contains_terraform_files(directory: str) -> bool:
     """Check if directory contains Terraform files"""
     return len(_find_terraform_files(directory)) > 0
 
+def _validate_environment() -> None:
+    """Validate environment configuration"""
+    env = os.getenv('ENVIRONMENT', 'prod').lower()
+    
+    if env == 'dev':
+        # Validate Ollama configuration
+        if not os.getenv('OLLAMA_HOST'):
+            raise click.ClickException(
+                "OLLAMA_HOST must be set in development environment. "
+                "Please set it in your .env file."
+            )
+        if not os.getenv('OLLAMA_MODEL'):
+            raise click.ClickException(
+                "OLLAMA_MODEL must be set in development environment. "
+                "Please set it in your .env file."
+            )
+        click.echo(f"Using Ollama model {os.getenv('OLLAMA_MODEL')} for analysis")
+    else:
+        # Validate OpenAI configuration
+        if not os.getenv('OPENAI_API_KEY'):
+            raise click.ClickException(
+                "OpenAI API key not found. Please set the OPENAI_API_KEY environment variable "
+                "or add it to your .env file."
+            )
+        click.echo("Using OpenAI for analysis")
+
 @click.group()
 def cli():
     """Cloud Builder CLI for analyzing infrastructure code"""
@@ -45,12 +71,8 @@ def print(text):
 def analyze(directory: str, agent: str):
     """Analyze Terraform code in the specified directory"""
     try:
-        # Ensure OpenAI API key is set
-        if not os.getenv('OPENAI_API_KEY'):
-            raise click.ClickException(
-                "OpenAI API key not found. Please set the OPENAI_API_KEY environment variable "
-                "or add it to your .env file."
-            )
+        # Validate environment configuration
+        _validate_environment()
 
         # Validate directory contains Terraform files
         tf_files = _find_terraform_files(directory)
