@@ -23,7 +23,7 @@ class CrewAgent(BaseAgent):
             - Cost optimization""",
             allow_delegation=False,
             verbose=True,
-            llm_config=llm_settings
+            llm=llm_settings
         )
         
         self.architect = Agent(
@@ -37,12 +37,13 @@ class CrewAgent(BaseAgent):
             - Cost optimization""",
             allow_delegation=False,
             verbose=True,
-            llm_config=llm_settings
+            llm=llm_settings
         )
 
     def _get_llm_settings(self) -> Dict[str, Any]:
         """Get LLM configuration based on environment"""
         env = os.getenv('ENVIRONMENT', 'prod').lower()
+        timeout = int(os.getenv('ANALYSIS_TIMEOUT', '300'))
         
         if env == 'dev':
             # Use local Ollama in development
@@ -52,13 +53,11 @@ class CrewAgent(BaseAgent):
                 raise ValueError("OLLAMA_MODEL must be set in development environment")
                 
             return {
-                "config_list": [{
-                    "model": os.getenv('OLLAMA_MODEL'),
-                    "base_url": os.getenv('OLLAMA_HOST'),
-                    "api_type": "ollama"
-                }],
+                "model": os.getenv('OLLAMA_MODEL'),
+                "base_url": os.getenv('OLLAMA_HOST'),
+                "api_type": "ollama",
                 "temperature": 0.1,  # Lower temperature for more focused responses
-                "request_timeout": int(os.getenv('ANALYSIS_TIMEOUT', '300'))
+                "timeout": timeout
             }
         else:
             # Use OpenAI in production
@@ -66,12 +65,10 @@ class CrewAgent(BaseAgent):
                 raise ValueError("OPENAI_API_KEY must be set in production environment")
                 
             return {
-                "config_list": [{
-                    "model": "gpt-4",
-                    "api_key": os.getenv('OPENAI_API_KEY')
-                }],
+                "model": "gpt-4",
+                "api_key": os.getenv('OPENAI_API_KEY'),
                 "temperature": 0.1,
-                "request_timeout": int(os.getenv('ANALYSIS_TIMEOUT', '300'))
+                "timeout": timeout
             }
 
     def analyze_terraform(self, directory: str) -> Dict[str, Any]:
