@@ -1,6 +1,8 @@
 """LLM and Agent Configuration"""
 import os
 from typing import Dict, Any
+from crewai.agent import Agent
+from litellm import completion
 
 def get_llm_config() -> Dict[str, Any]:
     """Get LLM configuration based on environment"""
@@ -15,11 +17,14 @@ def get_llm_config() -> Dict[str, Any]:
             raise ValueError("OLLAMA_MODEL must be set in development environment")
             
         return {
-            "provider": "ollama",
-            "model": os.getenv('OLLAMA_MODEL'),
-            "api_base": os.getenv('OLLAMA_HOST'),
+            "config_list": [{
+                "model": f"ollama/{os.getenv('OLLAMA_MODEL')}",
+                "api_base": os.getenv('OLLAMA_HOST'),
+                "api_type": "ollama",
+                "api_key": "not-needed"  # Ollama doesn't need an API key
+            }],
             "temperature": 0.1,  # Lower temperature for more focused responses
-            "timeout": timeout
+            "request_timeout": timeout
         }
     else:
         # Use OpenAI in production
@@ -27,11 +32,12 @@ def get_llm_config() -> Dict[str, Any]:
             raise ValueError("OPENAI_API_KEY must be set in production environment")
             
         return {
-            "provider": "openai",
-            "model": "gpt-4",
-            "api_key": os.getenv('OPENAI_API_KEY'),
+            "config_list": [{
+                "model": "gpt-4",
+                "api_key": os.getenv('OPENAI_API_KEY')
+            }],
             "temperature": 0.1,
-            "timeout": timeout
+            "request_timeout": timeout
         }
 
 def get_agent_config(role: str) -> Dict[str, Any]:
