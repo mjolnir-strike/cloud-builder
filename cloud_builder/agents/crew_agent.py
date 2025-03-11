@@ -45,28 +45,28 @@ class CrewAgent(BaseAgent):
             Analyze Terraform code in {directory} focusing on infrastructure best practices:
 
             1. Resource Configuration:
-               - Instance types and sizing
-               - Storage configurations
-               - Network architecture
-               - Service integrations
+               - Compute resource sizing and types
+               - Storage resource configurations
+               - Network topology and design
+               - Service integrations and dependencies
 
             2. Security Standards:
-               - Access management
-               - Network security
-               - Service endpoints
-               - Authentication methods
+               - Identity and access management
+               - Network security and isolation
+               - Service security configurations
+               - Authentication and authorization
 
             3. Infrastructure Design:
-               - Resource organization
-               - Module structure
-               - Variable management
-               - State configuration
+               - Resource organization and naming
+               - Module structure and reusability
+               - Variable management and validation
+               - State management and locking
 
             4. Cost Optimization:
-               - Resource efficiency
-               - Scaling approach
-               - Storage choices
-               - Network design
+               - Resource efficiency and utilization
+               - Scaling strategy and elasticity
+               - Storage tier selection
+               - Network traffic optimization
 
             Provide a detailed analysis of these aspects.
             """,
@@ -85,22 +85,22 @@ class CrewAgent(BaseAgent):
             Review the infrastructure analysis and provide recommendations focusing on:
 
             1. Architecture:
-               - Resource organization
-               - Module structure
-               - Service integration
-               - Scalability approach
+               - Resource organization and relationships
+               - Module design patterns
+               - Service integration patterns
+               - Scalability and resilience
 
             2. Security:
-               - Access controls
-               - Network security
-               - Data protection
-               - Compliance considerations
+               - Access control patterns
+               - Network isolation strategy
+               - Data protection mechanisms
+               - Compliance and governance
 
             3. Efficiency:
-               - Resource utilization
-               - Cost optimization
-               - Performance considerations
-               - Maintenance aspects
+               - Resource utilization patterns
+               - Cost optimization strategies
+               - Performance optimization
+               - Operational efficiency
 
             Provide specific improvement suggestions for better infrastructure design.
             """,
@@ -143,9 +143,9 @@ Key Findings:
 
     def _check_standards_compliance(self, analysis: Any) -> bool:
         """Check if infrastructure meets general best practices"""
-        # General infrastructure best practices:
-        # 1. Resource organization
-        # 2. Security configurations
-        # 3. Cost optimization
-        # 4. Maintainability
+        # Provider-agnostic infrastructure best practices:
+        # 1. Resource organization and naming
+        # 2. Security and access controls
+        # 3. Cost optimization and efficiency
+        # 4. Maintainability and reusability
         return True
