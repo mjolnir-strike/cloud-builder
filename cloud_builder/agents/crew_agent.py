@@ -71,6 +71,13 @@ class CrewAgent(BaseAgent):
 
             Provide a detailed analysis of compliance with these standards.
             """,
+            expected_output="""A detailed analysis report covering:
+            1. Compute configuration compliance
+            2. Network setup validation
+            3. Security standards assessment
+            4. Cost optimization review
+            
+            Each section should clearly indicate whether the implementation meets our standards.""",
             agent=self.terraform_expert
         )
 
@@ -95,6 +102,13 @@ class CrewAgent(BaseAgent):
 
             Provide specific improvement suggestions that align with our standards.
             """,
+            expected_output="""A comprehensive review report including:
+            1. Resource management assessment
+            2. Security compliance validation
+            3. Cost efficiency analysis
+            4. Specific improvement recommendations
+            
+            Each section should provide actionable suggestions aligned with our standards.""",
             agent=self.architect
         )
 
