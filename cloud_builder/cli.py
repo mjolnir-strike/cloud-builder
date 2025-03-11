@@ -2,10 +2,16 @@ import click
 from typing import Optional
 from .agents import AgentFactory
 import os
+import glob
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
 load_dotenv()
+
+def _contains_terraform_files(directory: str) -> bool:
+    """Check if directory contains Terraform files"""
+    tf_files = glob.glob(os.path.join(directory, "**/*.tf"), recursive=True)
+    return len(tf_files) > 0
 
 @click.group()
 def cli():
@@ -30,6 +36,13 @@ def analyze(directory: str, agent: str):
             raise click.ClickException(
                 "OpenAI API key not found. Please set the OPENAI_API_KEY environment variable "
                 "or add it to your .env file."
+            )
+
+        # Validate directory contains Terraform files
+        if not _contains_terraform_files(directory):
+            raise click.ClickException(
+                f"No Terraform files (*.tf) found in {directory}. "
+                "Please provide a directory containing Terraform code."
             )
 
         # Create and run the appropriate agent
