@@ -53,9 +53,8 @@ class CrewAgent(BaseAgent):
                 raise ValueError("OLLAMA_MODEL must be set in development environment")
                 
             return {
-                "model": os.getenv('OLLAMA_MODEL'),
-                "base_url": os.getenv('OLLAMA_HOST'),
-                "api_type": "ollama",
+                "model": f"ollama/{os.getenv('OLLAMA_MODEL')}",  # Prefix with ollama/
+                "api_base": os.getenv('OLLAMA_HOST'),
                 "temperature": 0.1,  # Lower temperature for more focused responses
                 "timeout": timeout
             }
