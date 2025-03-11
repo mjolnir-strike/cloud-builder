@@ -11,11 +11,20 @@ def get_llm_config() -> Dict[str, Any]:
     """
     model = os.getenv('OLLAMA_MODEL', 'llama3.2')
     base_url = os.getenv('OLLAMA_HOST', 'http://localhost:11434')
+    
+    # Configure model settings based on type
+    if model == 'gpt-4-0-mini':
+        temperature = 0.1  # More precise for analysis
+        timeout = 600     # Longer timeout for complex analysis
+    else:
+        temperature = 0.2  # Default for other models
+        timeout = 300     # Default timeout
+    
     return {
         'model': f"ollama/{model}",  # Specify ollama as the provider
         'base_url': base_url,
-        'temperature': 0.1,
-        'request_timeout': int(os.getenv('ANALYSIS_TIMEOUT', '300'))
+        'temperature': temperature,
+        'request_timeout': int(os.getenv('ANALYSIS_TIMEOUT', str(timeout)))
     }
 
 def get_agent_config(role: str) -> dict:
