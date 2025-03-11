@@ -13,16 +13,36 @@ class CrewAgent(BaseAgent):
             goal='Analyze Terraform code for best practices and security',
             backstory='Senior DevOps engineer with expertise in AWS and Terraform',
             allow_delegation=False,
+            verbose=True,
+            function_calling=True,
             tools=[
                 {
-                    "name": "analyze_code",
-                    "description": "Analyze Terraform code for best practices",
-                    "function": self._analyze_code
+                    "name": "analyze_terraform_code",
+                    "description": "Analyze Terraform code for AWS best practices",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "directory": {
+                                "type": "string",
+                                "description": "Directory containing Terraform code"
+                            }
+                        },
+                        "required": ["directory"]
+                    }
                 },
                 {
-                    "name": "check_security",
+                    "name": "check_security_config",
                     "description": "Check security configurations against standards",
-                    "function": self._check_security
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "config": {
+                                "type": "object",
+                                "description": "Security configuration to check"
+                            }
+                        },
+                        "required": ["config"]
+                    }
                 }
             ]
         )
@@ -32,11 +52,22 @@ class CrewAgent(BaseAgent):
             goal='Review infrastructure design and suggest improvements',
             backstory='Cloud architect specializing in AWS infrastructure design',
             allow_delegation=False,
+            verbose=True,
+            function_calling=True,
             tools=[
                 {
                     "name": "review_architecture",
                     "description": "Review infrastructure architecture",
-                    "function": self._review_architecture
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "analysis": {
+                                "type": "object",
+                                "description": "Analysis results to review"
+                            }
+                        },
+                        "required": ["analysis"]
+                    }
                 }
             ]
         )
@@ -57,6 +88,7 @@ class CrewAgent(BaseAgent):
                               f"4. Security group rules (ports 80, 443, 5000)\n"
                               f"5. SSM-based management\n"
                               f"6. Cost optimization practices",
+                    expected_output="Detailed analysis of Terraform code with focus on AWS best practices and security standards",
                     agent=self.terraform_expert
                 ),
                 Task(
@@ -65,10 +97,12 @@ class CrewAgent(BaseAgent):
                               "2. Cost optimization guidelines\n"
                               "3. Security best practices\n"
                               "4. Resource tagging standards",
+                    expected_output="Architecture review with specific improvement suggestions",
                     agent=self.architect
                 )
             ],
-            process=Process.sequential
+            process=Process.sequential,
+            verbose=True
         )
         
         result = crew.kickoff()
@@ -90,38 +124,11 @@ Key Findings:
 {analysis['analysis']}
 """
 
-    def _analyze_code(self, directory: str) -> Dict[str, Any]:
-        """Analyze Terraform code for best practices"""
-        # Implementation will analyze for:
-        # - Single AZ deployment
-        # - ARM instance types (t4g.micro)
-        # - Storage configurations (gp3)
-        # - Resource tagging
-        return {
-            "best_practices": True,
-            "findings": "Infrastructure follows AWS best practices"
-        }
-
-    def _check_security(self, config: Dict[str, Any]) -> List[str]:
-        """Check security configurations against our standards"""
-        # Check against our security standards:
-        # - SSM for management
-        # - No direct SSH
-        # - Minimal port exposure
-        return ["Security configurations align with standards"]
-
-    def _review_architecture(self, analysis: Dict[str, Any]) -> Dict[str, Any]:
-        """Review infrastructure architecture"""
-        # Review based on our standards:
-        # - Single AZ deployment
-        # - Cost optimization
-        # - Security group configurations
-        return {
-            "architecture_review": "Architecture follows best practices",
-            "suggestions": []
-        }
-
     def _check_standards_compliance(self, analysis: Any) -> bool:
         """Check if infrastructure meets our standards"""
-        # Verify compliance with our standards
+        # Verify compliance with our standards:
+        # - Single AZ in us-east-1a
+        # - ARM instances (t4g.micro)
+        # - SSM management
+        # - Security group rules
         return True
