@@ -14,12 +14,7 @@ class CrewAgent(BaseAgent):
     def __init__(self):
         """Initialize CrewAgent with LLM configuration"""
         # Initialize Ollama LLM
-        llm = OllamaLLM(
-            model=f"ollama/{os.getenv('OLLAMA_MODEL')}",  # Specify provider
-            base_url=os.getenv('OLLAMA_HOST'),
-            temperature=0.1,
-            timeout=int(os.getenv('ANALYSIS_TIMEOUT', '300'))
-        )
+        llm = get_llm_config()
         
         # Initialize tools
         tools = TerraformTools()
