@@ -1,74 +1,30 @@
 from typing import Any, Dict, List
 from crewai import Agent, Task, Crew, Process
 from .base import BaseAgent
+from .config import get_llm_config, get_agent_config
+from .tasks import get_analysis_task, get_review_task
 import os
-from litellm import completion
 
 class CrewAgent(BaseAgent):
     """CrewAI implementation for infrastructure analysis"""
     
     def __init__(self):
-        # Configure LLM settings based on environment
-        llm_settings = self._get_llm_settings()
+        # Configure LLM settings
+        llm_settings = get_llm_config()
         
-        # Initialize agents for infrastructure analysis
+        # Initialize infrastructure expert
+        expert_config = get_agent_config('terraform_expert')
         self.terraform_expert = Agent(
-            role='Infrastructure Expert',
-            goal='Analyze Terraform code for best practices and security',
-            backstory="""Senior DevOps engineer with expertise in infrastructure as code.
-            Specializes in:
-            - Infrastructure best practices
-            - Security configurations
-            - Resource management
-            - Cost optimization""",
-            allow_delegation=False,
-            verbose=True,
+            **expert_config,
             llm=llm_settings
         )
         
+        # Initialize solution architect
+        architect_config = get_agent_config('solution_architect')
         self.architect = Agent(
-            role='Solution Architect',
-            goal='Review infrastructure design and suggest improvements',
-            backstory="""Cloud architect specializing in infrastructure design.
-            Expert in:
-            - Infrastructure architecture
-            - Security best practices
-            - Resource organization
-            - Cost optimization""",
-            allow_delegation=False,
-            verbose=True,
+            **architect_config,
             llm=llm_settings
         )
-
-    def _get_llm_settings(self) -> Dict[str, Any]:
-        """Get LLM configuration based on environment"""
-        env = os.getenv('ENVIRONMENT', 'prod').lower()
-        timeout = int(os.getenv('ANALYSIS_TIMEOUT', '300'))
-        
-        if env == 'dev':
-            # Use local Ollama in development
-            if not os.getenv('OLLAMA_HOST'):
-                raise ValueError("OLLAMA_HOST must be set in development environment")
-            if not os.getenv('OLLAMA_MODEL'):
-                raise ValueError("OLLAMA_MODEL must be set in development environment")
-                
-            return {
-                "model": f"ollama/{os.getenv('OLLAMA_MODEL')}",  # Prefix with ollama/
-                "api_base": os.getenv('OLLAMA_HOST'),
-                "temperature": 0.1,  # Lower temperature for more focused responses
-                "timeout": timeout
-            }
-        else:
-            # Use OpenAI in production
-            if not os.getenv('OPENAI_API_KEY'):
-                raise ValueError("OPENAI_API_KEY must be set in production environment")
-                
-            return {
-                "model": "gpt-4",
-                "api_key": os.getenv('OPENAI_API_KEY'),
-                "temperature": 0.1,
-                "timeout": timeout
-            }
 
     def analyze_terraform(self, directory: str) -> Dict[str, Any]:
         """Analyze Terraform code using a crew of specialized agents"""
@@ -76,79 +32,8 @@ class CrewAgent(BaseAgent):
             raise ValueError(f"Directory {directory} does not exist")
 
         # Create tasks for infrastructure analysis
-        analyze_task = Task(
-            description=f"""
-            Analyze Terraform code in {directory} focusing on infrastructure best practices:
-
-            1. Resource Configuration:
-               - Compute resource sizing and types
-               - Storage resource configurations
-               - Network topology and design
-               - Service integrations and dependencies
-
-            2. Security Standards:
-               - Identity and access management
-               - Network security and isolation
-               - Service security configurations
-               - Authentication and authorization
-
-            3. Infrastructure Design:
-               - Resource organization and naming
-               - Module structure and reusability
-               - Variable management and validation
-               - State management and locking
-
-            4. Cost Optimization:
-               - Resource efficiency and utilization
-               - Scaling strategy and elasticity
-               - Storage tier selection
-               - Network traffic optimization
-
-            Provide a detailed analysis of these aspects.
-            """,
-            expected_output="""A detailed analysis report covering:
-            1. Resource configuration assessment
-            2. Security implementation review
-            3. Infrastructure design evaluation
-            4. Cost optimization analysis
-            
-            Each section should highlight strengths and potential improvements.""",
-            agent=self.terraform_expert
-        )
-
-        review_task = Task(
-            description="""
-            Review the infrastructure analysis and provide recommendations focusing on:
-
-            1. Architecture:
-               - Resource organization and relationships
-               - Module design patterns
-               - Service integration patterns
-               - Scalability and resilience
-
-            2. Security:
-               - Access control patterns
-               - Network isolation strategy
-               - Data protection mechanisms
-               - Compliance and governance
-
-            3. Efficiency:
-               - Resource utilization patterns
-               - Cost optimization strategies
-               - Performance optimization
-               - Operational efficiency
-
-            Provide specific improvement suggestions for better infrastructure design.
-            """,
-            expected_output="""A comprehensive review report including:
-            1. Architecture assessment
-            2. Security evaluation
-            3. Efficiency analysis
-            4. Actionable recommendations
-            
-            Focus on practical improvements that enhance the infrastructure.""",
-            agent=self.architect
-        )
+        analyze_task = get_analysis_task(directory, self.terraform_expert)
+        review_task = get_review_task(self.architect)
 
         # Create and run the crew
         crew = Crew(
