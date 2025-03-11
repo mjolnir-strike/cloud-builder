@@ -1,5 +1,5 @@
 from typing import Any, Dict, List
-from crewai import Agent, Task, Crew, Tool
+from crewai import Agent, Task, Crew, Process
 from .base import BaseAgent
 import os
 
@@ -7,38 +7,38 @@ class CrewAgent(BaseAgent):
     """CrewAI implementation for infrastructure analysis"""
     
     def __init__(self):
-        # Define tools properly using CrewAI's Tool class
-        self.tools = [
-            Tool(
-                name='analyze_code',
-                description='Analyze Terraform code for best practices',
-                func=self._analyze_code
-            ),
-            Tool(
-                name='check_security',
-                description='Check security configurations against standards',
-                func=self._check_security
-            ),
-            Tool(
-                name='review_architecture',
-                description='Review infrastructure architecture',
-                func=self._review_architecture
-            )
-        ]
-
-        # Initialize agents with proper tool definitions
+        # Initialize agents with tools as functions
         self.terraform_expert = Agent(
             role='Infrastructure Expert',
             goal='Analyze Terraform code for best practices and security',
             backstory='Senior DevOps engineer with expertise in AWS and Terraform',
-            tools=self.tools[:2]  # analyze_code and check_security
+            allow_delegation=False,
+            tools=[
+                {
+                    "name": "analyze_code",
+                    "description": "Analyze Terraform code for best practices",
+                    "function": self._analyze_code
+                },
+                {
+                    "name": "check_security",
+                    "description": "Check security configurations against standards",
+                    "function": self._check_security
+                }
+            ]
         )
         
         self.architect = Agent(
             role='Solution Architect',
             goal='Review infrastructure design and suggest improvements',
             backstory='Cloud architect specializing in AWS infrastructure design',
-            tools=[self.tools[2]]  # review_architecture
+            allow_delegation=False,
+            tools=[
+                {
+                    "name": "review_architecture",
+                    "description": "Review infrastructure architecture",
+                    "function": self._review_architecture
+                }
+            ]
         )
 
     def analyze_terraform(self, directory: str) -> Dict[str, Any]:
@@ -50,14 +50,25 @@ class CrewAgent(BaseAgent):
             agents=[self.terraform_expert, self.architect],
             tasks=[
                 Task(
-                    description=f"Analyze Terraform code in {directory} for best practices and security",
+                    description=f"Analyze Terraform code in {directory} for best practices and security. Check for:\n"
+                              f"1. Single AZ deployment in us-east-1a\n"
+                              f"2. ARM instance usage (t4g.micro)\n"
+                              f"3. Storage configurations (gp3)\n"
+                              f"4. Security group rules (ports 80, 443, 5000)\n"
+                              f"5. SSM-based management\n"
+                              f"6. Cost optimization practices",
                     agent=self.terraform_expert
                 ),
                 Task(
-                    description="Review infrastructure architecture and suggest improvements",
+                    description="Review the infrastructure architecture and suggest improvements based on:\n"
+                              "1. Single AZ deployment requirements\n"
+                              "2. Cost optimization guidelines\n"
+                              "3. Security best practices\n"
+                              "4. Resource tagging standards",
                     agent=self.architect
                 )
-            ]
+            ],
+            process=Process.sequential
         )
         
         result = crew.kickoff()
