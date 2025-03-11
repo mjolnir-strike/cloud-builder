@@ -3,18 +3,17 @@ from setuptools import setup, find_packages
 setup(
     name="cloud-builder",
     version="0.1.0",
-    description="Provider-agnostic Terraform code analysis tool using AI agents",
+    description="Provider-agnostic Terraform code analysis tool using CrewAI",
     packages=find_packages(),
     install_requires=[
         "click>=8.0.0",  # CLI framework
-        "crewai>=0.1.0",  # Primary AI agent framework
+        "crewai==0.105.0",  # AI agent framework
+        "crewai-tools==0.37.0",  # CrewAI tools
         "python-dotenv>=1.0.0",  # Environment variable management
         "pydantic>=2.0.0",  # Data validation
-        "typing-extensions>=4.0.0",  # Enhanced typing support
-        "litellm>=1.0.0",  # LLM provider abstraction
+        "langchain_ollama>=0.1.0",  # Ollama integration
     ],
     extras_require={
-        "langchain": ["langchain>=0.1.0"],  # Optional LangChain support
         "dev": [
             "mypy>=1.0.0",  # Type checking
             "black>=23.0.0",  # Code formatting
