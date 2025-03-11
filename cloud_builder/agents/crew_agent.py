@@ -93,20 +93,9 @@ class CrewAgent:
             verbose=True
         )
         
-        # Run analysis
+        # Run analysis and process results
         result = crew.kickoff()
-        return self._process_result(result)
-    
-    def _process_result(self, result: List[str]) -> Dict[str, Any]:
-        """Process analysis results
-        
-        Args:
-            result: Raw analysis results from agents
-            
-        Returns:
-            Processed results with security and cost analyses
-        """
         return {
-            'security_analysis': result[0] if len(result) > 0 else 'No security analysis available',
-            'cost_analysis': result[1] if len(result) > 1 else 'No cost analysis available'
+            'security_analysis': result.tasks[0].output if result.tasks else 'No security analysis available',
+            'cost_analysis': result.tasks[1].output if len(result.tasks) > 1 else 'No cost analysis available'
         }
