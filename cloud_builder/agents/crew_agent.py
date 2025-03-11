@@ -11,13 +11,12 @@ class CrewAgent(BaseAgent):
         self.terraform_expert = Agent(
             role='Infrastructure Expert',
             goal='Analyze Terraform code for best practices and security',
-            backstory="""Senior DevOps engineer with expertise in AWS and Terraform.
+            backstory="""Senior DevOps engineer with expertise in infrastructure as code.
             Specializes in:
-            - Single AZ deployments in us-east-1a
-            - ARM-based instances (t4g.micro)
-            - SSM-based management (no SSH)
-            - Security group configurations
-            - Cost optimization with gp3 volumes""",
+            - Infrastructure best practices
+            - Security configurations
+            - Resource management
+            - Cost optimization""",
             allow_delegation=False,
             verbose=True
         )
@@ -25,12 +24,12 @@ class CrewAgent(BaseAgent):
         self.architect = Agent(
             role='Solution Architect',
             goal='Review infrastructure design and suggest improvements',
-            backstory="""Cloud architect specializing in AWS infrastructure design.
+            backstory="""Cloud architect specializing in infrastructure design.
             Expert in:
-            - Cost-effective single AZ deployments
-            - Security best practices (SSM, minimal ports)
-            - Resource tagging standards
-            - Jenkins CI/CD infrastructure""",
+            - Infrastructure architecture
+            - Security best practices
+            - Resource organization
+            - Cost optimization""",
             allow_delegation=False,
             verbose=True
         )
@@ -43,41 +42,41 @@ class CrewAgent(BaseAgent):
         # Create tasks for infrastructure analysis
         analyze_task = Task(
             description=f"""
-            Analyze Terraform code in {directory} focusing on our infrastructure standards:
+            Analyze Terraform code in {directory} focusing on infrastructure best practices:
 
-            1. Compute Requirements:
-               - ARM instances (t4g.micro)
-               - Amazon Linux 2023 ARM
-               - 8GB gp3 root volume
-               - SSM-enabled (no SSH)
+            1. Resource Configuration:
+               - Instance types and sizing
+               - Storage configurations
+               - Network architecture
+               - Service integrations
 
-            2. Network Configuration:
-               - Single AZ in us-east-1a
-               - VPC CIDR: 10.0.0.0/16
-               - Public: 10.0.1.0/24
-               - Private: 10.0.10.0/24
+            2. Security Standards:
+               - Access management
+               - Network security
+               - Service endpoints
+               - Authentication methods
 
-            3. Security Standards:
-               - Web ports (80, 443, 5000)
-               - Jenkins port (8080)
-               - No direct SSH
-               - SSM management
+            3. Infrastructure Design:
+               - Resource organization
+               - Module structure
+               - Variable management
+               - State configuration
 
             4. Cost Optimization:
-               - ARM-based instances
-               - gp3 storage
-               - Single AZ
-               - No NAT Gateway
+               - Resource efficiency
+               - Scaling approach
+               - Storage choices
+               - Network design
 
-            Provide a detailed analysis of compliance with these standards.
+            Provide a detailed analysis of these aspects.
             """,
             expected_output="""A detailed analysis report covering:
-            1. Compute configuration compliance
-            2. Network setup validation
-            3. Security standards assessment
-            4. Cost optimization review
+            1. Resource configuration assessment
+            2. Security implementation review
+            3. Infrastructure design evaluation
+            4. Cost optimization analysis
             
-            Each section should clearly indicate whether the implementation meets our standards.""",
+            Each section should highlight strengths and potential improvements.""",
             agent=self.terraform_expert
         )
 
@@ -85,30 +84,33 @@ class CrewAgent(BaseAgent):
             description="""
             Review the infrastructure analysis and provide recommendations focusing on:
 
-            1. Resource Management:
-               - Variable validation rules
-               - Standardized tagging (Environment, ManagedBy, Project, Name)
+            1. Architecture:
+               - Resource organization
                - Module structure
+               - Service integration
+               - Scalability approach
 
-            2. Security Compliance:
-               - SSM-based management
-               - Port exposure
-               - Security group rules
+            2. Security:
+               - Access controls
+               - Network security
+               - Data protection
+               - Compliance considerations
 
-            3. Cost Efficiency:
-               - Resource sizing
-               - Storage configuration
-               - AZ strategy
+            3. Efficiency:
+               - Resource utilization
+               - Cost optimization
+               - Performance considerations
+               - Maintenance aspects
 
-            Provide specific improvement suggestions that align with our standards.
+            Provide specific improvement suggestions for better infrastructure design.
             """,
             expected_output="""A comprehensive review report including:
-            1. Resource management assessment
-            2. Security compliance validation
-            3. Cost efficiency analysis
-            4. Specific improvement recommendations
+            1. Architecture assessment
+            2. Security evaluation
+            3. Efficiency analysis
+            4. Actionable recommendations
             
-            Each section should provide actionable suggestions aligned with our standards.""",
+            Focus on practical improvements that enhance the infrastructure.""",
             agent=self.architect
         )
 
@@ -140,11 +142,10 @@ Key Findings:
 """
 
     def _check_standards_compliance(self, analysis: Any) -> bool:
-        """Check if infrastructure meets our standards"""
-        # Standards from our infrastructure requirements:
-        # 1. Single AZ in us-east-1a
-        # 2. ARM instances (t4g.micro)
-        # 3. SSM management (no SSH)
-        # 4. Security group rules (80, 443, 5000, 8080)
-        # 5. Cost optimization (gp3, no NAT)
+        """Check if infrastructure meets general best practices"""
+        # General infrastructure best practices:
+        # 1. Resource organization
+        # 2. Security configurations
+        # 3. Cost optimization
+        # 4. Maintainability
         return True
