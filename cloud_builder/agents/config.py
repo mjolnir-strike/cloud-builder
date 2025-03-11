@@ -1,52 +1,57 @@
-"""LLM and Agent Configuration"""
-import os
+"""Configuration for agents and LLM"""
 from typing import Dict, Any
-from crewai.agent import Agent
 from langchain_ollama import OllamaLLM
+import os
 
-def get_llm_config() -> OllamaLLM:
-    """Get LLM configuration for Ollama"""
-    # Validate required environment variables
-    if not os.getenv('OLLAMA_HOST'):
-        raise ValueError("OLLAMA_HOST must be set (e.g. http://localhost:11434)")
-    if not os.getenv('OLLAMA_MODEL'):
-        raise ValueError("OLLAMA_MODEL must be set (e.g. qwen2.5-coder)")
+def get_llm_config() -> Dict[str, Any]:
+    """Get LLM configuration for Ollama
     
-    return OllamaLLM(
-        model=f"ollama/{os.getenv('OLLAMA_MODEL')}",  # Specify provider
-        base_url=os.getenv('OLLAMA_HOST'),
-        temperature=0.1,
-        timeout=int(os.getenv('ANALYSIS_TIMEOUT', '300'))
-    )
+    Returns:
+        LLM configuration
+    """
+    model = os.getenv('OLLAMA_MODEL', 'qwen2.5')
+    base_url = os.getenv('OLLAMA_HOST', 'http://localhost:11434')
+    return {
+        'model': model,
+        'base_url': base_url,
+        'temperature': 0.1,
+        'request_timeout': int(os.getenv('ANALYSIS_TIMEOUT', '300'))
+    }
 
-def get_agent_config(role: str) -> Dict[str, Any]:
-    """Get agent configuration by role"""
+def get_agent_config(role: str) -> dict:
+    """Get agent configuration
+    
+    Args:
+        role: Agent role (security_expert, cost_expert)
+        
+    Returns:
+        Agent configuration
+    """
+    # Get LLM configuration
+    llm_config = get_llm_config()
+    
+    # Base configuration
+    base_config = {
+        'llm': OllamaLLM(**llm_config),
+        'verbose': True,
+        'allow_delegation': False,
+        'memory': False
+    }
+    
+    # Role-specific configurations
     configs = {
-        'terraform_expert': {
-            'role': 'Infrastructure Expert',
-            'goal': 'Analyze Terraform code for best practices and security',
-            'backstory': """Senior DevOps engineer with expertise in infrastructure as code.
-            Specializes in:
-            - Infrastructure best practices
-            - Security configurations
-            - Resource management
-            - Cost optimization""",
-            'memory': True,  # Enable memory for better context retention
-            'max_iterations': 3,  # Limit iterations for focused analysis
-            'verbose': True
+        'security_expert': {
+            **base_config,
+            'role': 'Security Expert',
+            'goal': 'Analyze Terraform code for security vulnerabilities and best practices',
+            'backstory': 'You are a cloud security expert with deep knowledge of infrastructure security best practices. Your task is to identify potential security issues and suggest improvements in IAM configurations, network security, data protection, and compliance.'
         },
-        'solution_architect': {
-            'role': 'Solution Architect',
-            'goal': 'Review infrastructure design and suggest improvements',
-            'backstory': """Cloud architect specializing in infrastructure design.
-            Expert in:
-            - Infrastructure architecture
-            - Security best practices
-            - Resource organization
-            - Cost optimization""",
-            'memory': True,  # Enable memory for better context retention
-            'max_iterations': 3,  # Limit iterations for focused analysis
-            'verbose': True
+        'cost_expert': {
+            **base_config,
+            'role': 'Cost Expert',
+            'goal': 'Analyze Terraform code for cost optimization opportunities',
+            'backstory': 'You are a cloud cost optimization expert with experience in identifying cost-saving opportunities. Your task is to review resource sizing, retention policies, backup configurations, and suggest cost-effective alternatives.'
         }
     }
+    
     return configs.get(role, {})

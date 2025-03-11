@@ -7,11 +7,10 @@ setup(
     packages=find_packages(),
     install_requires=[
         "click>=8.0.0",  # CLI framework
-        "crewai==0.105.0",  # AI agent framework
-        "crewai-tools==0.37.0",  # CrewAI tools
+        "crewai>=0.12.2",  # AI agent framework
         "python-dotenv>=1.0.0",  # Environment variable management
-        "pydantic>=2.0.0",  # Data validation
-        "langchain_ollama>=0.1.0",  # Ollama integration
+        "pydantic>=2.6.0",  # Data validation
+        "langchain_ollama>=0.1.1",  # Ollama integration
     ],
     extras_require={
         "dev": [

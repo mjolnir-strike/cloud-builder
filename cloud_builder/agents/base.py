@@ -1,8 +1,9 @@
+"""Base agent interface for infrastructure analysis"""
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
+from typing import Dict, Any
 
 class BaseAgent(ABC):
-    """Base agent interface that can be implemented by both CrewAI and LangChain"""
+    """Base agent interface for infrastructure analysis"""
     
     @abstractmethod
     def analyze_terraform(self, directory: str) -> Dict[str, Any]:
@@ -22,8 +23,5 @@ class AgentFactory:
         if agent_type == "crew":
             from .crew_agent import CrewAgent
             return CrewAgent()
-        elif agent_type == "langchain":
-            from .langchain_agent import LangChainAgent
-            return LangChainAgent()
         else:
             raise ValueError(f"Unsupported agent type: {agent_type}")

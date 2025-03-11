@@ -1,5 +1,5 @@
-from .base import AgentFactory, BaseAgent
+"""Agent implementations for infrastructure analysis"""
+from .base import BaseAgent
 from .crew_agent import CrewAgent
-from .langchain_agent import LangChainAgent
 
-__all__ = ['AgentFactory', 'BaseAgent', 'CrewAgent', 'LangChainAgent']
+__all__ = ['BaseAgent', 'CrewAgent']

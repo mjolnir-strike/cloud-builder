@@ -8,3 +8,5 @@ you will try to avoid os specific code and use cross platform code
 you will always build and run the code once before commiting and pushing to git.
 you will always write unit test and run them before commiting and pushing to git.
 you will always run the code in a virtual environment.
+Dont keep commiting and pushing code for every prompt or change. Only commit and push when you have completed a feature or a set of related changes.
+in the latest version of CrewAI, we need to use the tool decorator instead of Tool class

@@ -1,100 +1,72 @@
-import click
-from typing import Optional, List
-from .agents import AgentFactory
+"""CLI for cloud-builder"""
 import os
-import glob
+import click
+from pathlib import Path
+from typing import List
 from dotenv import load_dotenv
+from .agents.crew_agent import CrewAgent
+import sys
 
-# Load environment variables from .env file
-load_dotenv()
-
-def _find_terraform_files(directory: str) -> List[str]:
-    """Find all Terraform files in directory"""
-    patterns = [
-        "**/*.tf",           # Terraform files
-        "**/variables.tf",   # Variable definitions
-        "**/outputs.tf",     # Output definitions
-        "**/terraform.tfvars",  # Variable values
-        "**/modules/**/*/",  # Module directories
-    ]
+def find_terraform_files(directory: str) -> List[str]:
+    """Find Terraform files in directory
     
-    files = []
-    for pattern in patterns:
-        files.extend(glob.glob(os.path.join(directory, pattern), recursive=True))
-    return list(set(files))  # Remove duplicates
-
-def _contains_terraform_files(directory: str) -> bool:
-    """Check if directory contains Terraform files"""
-    return len(_find_terraform_files(directory)) > 0
-
-def _validate_environment() -> None:
-    """Validate environment configuration"""
-    env = os.getenv('ENVIRONMENT', 'prod').lower()
-    
-    if env == 'dev':
-        # Validate Ollama configuration
-        if not os.getenv('OLLAMA_HOST'):
-            raise click.ClickException(
-                "OLLAMA_HOST must be set in development environment. "
-                "Please set it in your .env file."
-            )
-        if not os.getenv('OLLAMA_MODEL'):
-            raise click.ClickException(
-                "OLLAMA_MODEL must be set in development environment. "
-                "Please set it in your .env file."
-            )
-        click.echo(f"Using Ollama model {os.getenv('OLLAMA_MODEL')} for analysis")
-    else:
-        # Validate OpenAI configuration
-        if not os.getenv('OPENAI_API_KEY'):
-            raise click.ClickException(
-                "OpenAI API key not found. Please set the OPENAI_API_KEY environment variable "
-                "or add it to your .env file."
-            )
-        click.echo("Using OpenAI for analysis")
+    Args:
+        directory: Directory to search
+        
+    Returns:
+        List of Terraform files
+    """
+    terraform_files = []
+    for path in Path(directory).rglob('*.tf'):
+        terraform_files.append(str(path.relative_to(directory)))
+    return terraform_files
 
 @click.group()
 def cli():
-    """Cloud Builder CLI for analyzing infrastructure code"""
+    """Cloud Builder CLI"""
+    # Load environment variables
+    load_dotenv()
     pass
 
 @cli.command()
-@click.argument('text', nargs=-1)
-def print(text):
-    """Print the provided text"""
-    click.echo(' '.join(text))
-
-@cli.command()
 @click.argument('directory', type=click.Path(exists=True, file_okay=False, dir_okay=True))
-@click.option('--agent', type=click.Choice(['crew', 'langchain']), default='crew',
-              help='Agent to use for analysis (default: crew)')
-def analyze(directory: str, agent: str):
-    """Analyze Terraform code in the specified directory"""
+def analyze(directory: str):
+    """Analyze Terraform code in directory"""
     try:
-        # Validate environment configuration
-        _validate_environment()
-
-        # Validate directory contains Terraform files
-        tf_files = _find_terraform_files(directory)
-        if not tf_files:
-            raise click.ClickException(
-                f"No Terraform files found in {directory}. "
-                "Please provide a directory containing Terraform code."
-            )
-
-        # Log found Terraform files
-        click.echo(f"Found {len(tf_files)} Terraform-related files:")
-        for file in sorted(tf_files):
-            click.echo(f"  - {os.path.relpath(file, directory)}")
+        # Find Terraform files
+        terraform_files = find_terraform_files(directory)
+        if not terraform_files:
+            click.echo("No Terraform files found")
+            sys.exit(1)
+        
+        click.echo("Found {} Terraform-related files:".format(len(terraform_files)))
+        for file in terraform_files:
+            click.echo(f"  - {file}")
         click.echo()
-
-        # Create and run the appropriate agent
-        agent_instance = AgentFactory.create_agent(agent)
-        analysis = agent_instance.analyze_terraform(directory)
-        click.echo(agent_instance.generate_summary(analysis))
+        
+        # Get model from environment
+        model = os.getenv('OLLAMA_MODEL', 'qwen2.5')
+        click.echo(f"Using Ollama model {model} for analysis")
+        
+        # Create agent and run analysis
+        agent = CrewAgent(directory)
+        results = agent.analyze()
+        
+        # Print results
+        click.echo("\nSecurity Analysis:")
+        click.echo("-" * 20)
+        click.echo(results['security_analysis'])
+        
+        click.echo("\nCost Analysis:")
+        click.echo("-" * 20)
+        click.echo(results['cost_analysis'])
+        
+    except ValueError as e:
+        click.echo(f"Configuration error: {str(e)}", err=True)
+        sys.exit(1)
     except Exception as e:
-        click.echo(f"Error analyzing directory: {str(e)}")
-        raise click.Abort()
+        click.echo(f"Error analyzing directory: {str(e)}", err=True)
+        sys.exit(1)
 
 if __name__ == '__main__':
     cli()

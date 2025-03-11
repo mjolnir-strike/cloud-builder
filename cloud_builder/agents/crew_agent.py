@@ -1,135 +1,112 @@
-"""CrewAI-based agent for analyzing Terraform code"""
-import os
-from typing import Dict, Any, Optional
-from functools import partial
-from crewai import Agent, Task, Crew, Process
-from langchain_ollama import OllamaLLM
-from .base import BaseAgent
-from .config import get_llm_config, get_agent_config
-from .tools import TerraformTools
+"""CrewAgent for Terraform analysis"""
+from typing import Dict, Any, List
+from crewai import Agent, Crew, Task, Process
+from .config import get_agent_config
+from .tools.read_terraform import read_terraform_files
 
-class CrewAgent(BaseAgent):
-    """CrewAI implementation of infrastructure analysis agent"""
+class CrewAgent:
+    """Agent for analyzing Terraform code using a provider-agnostic approach"""
     
-    def __init__(self):
-        """Initialize CrewAgent with LLM configuration"""
-        try:
-            # Initialize Ollama LLM
-            llm = get_llm_config()
-            
-            # Initialize tools as instance variable to maintain binding
-            self.tools = TerraformTools()
-            
-            # Create agents with their specialized tools
-            self.terraform_expert = Agent(
-                **get_agent_config('terraform_expert'),
-                llm=llm,  # Pass Ollama instance directly
-                tools=[
-                    self.tools.read_terraform_files,
-                    self.tools.analyze_security,
-                    self.tools.check_best_practices,
-                    self.tools.optimize_costs
-                ]
-            )
-            
-            self.architect = Agent(
-                **get_agent_config('solution_architect'),
-                llm=llm,  # Pass Ollama instance directly
-                tools=[
-                    self.tools.analyze_architecture,
-                    self.tools.review_design,
-                    self.tools.suggest_improvements,
-                    self.tools.check_scalability
-                ]
-            )
-        except Exception as e:
-            raise RuntimeError(f"Failed to initialize CrewAgent: {str(e)}") from e
+    def __init__(self, directory: str):
+        """Initialize CrewAgent
+        
+        Args:
+            directory: Directory containing Terraform files
+        """
+        self.directory = directory
+        self.tools = [read_terraform_files]
     
-    def analyze_terraform(self, directory: str) -> Dict[str, Any]:
-        """Analyze Terraform code in the specified directory"""
-        try:
-            if not os.path.exists(directory):
-                raise ValueError(f"Directory {directory} does not exist")
+    def create_agent(self, role: str) -> Agent:
+        """Create an agent with the specified role
+        
+        Args:
+            role: Agent role (security_expert, cost_expert)
             
-            # Create tasks for analysis
-            terraform_task = Task(
-                description="""
-                Analyze the Terraform code in the specified directory for:
-                1. Resource configuration best practices
-                2. Security standards (access, network, endpoints)
-                3. Infrastructure design patterns
-                4. Cost optimization opportunities
-                
-                Provide detailed findings and recommendations.
-                """,
-                expected_output="""A comprehensive analysis report containing:
-                1. Resource configuration details and recommendations
-                2. Security compliance findings and potential issues
-                3. Infrastructure design patterns and improvements
-                4. Cost optimization opportunities and suggestions
-                """,
-                agent=self.terraform_expert,
-                context=[{
-                    "directory": directory,
-                    "description": "Terraform infrastructure analysis task",
-                    "expected_output": "Analysis of infrastructure code"
-                }],
-                context_vars=["directory"],
-                tools=[
-                    self.terraform_expert.tools[0],  # read_terraform_files
-                    self.terraform_expert.tools[1],  # analyze_security
-                    self.terraform_expert.tools[2],  # check_best_practices
-                    self.terraform_expert.tools[3]   # optimize_costs
-                ]
-            )
-            
-            architect_task = Task(
-                description="""
-                Review the infrastructure design and provide:
-                1. Architecture review and recommendations
-                2. Best practices alignment
-                3. Improvement areas for scalability and maintainability
-                4. Design pattern suggestions
-                
-                Focus on provider-agnostic patterns and practices.
-                """,
-                expected_output="""A detailed architecture review report containing:
-                1. Architecture assessment and patterns analysis
-                2. Best practices evaluation and gaps
-                3. Specific recommendations for improvements
-                4. Actionable steps for implementation
-                """,
-                agent=self.architect,
-                context=[{
-                    "directory": directory,
-                    "description": "Architecture review task",
-                    "expected_output": "Review of infrastructure design"
-                }],
-                context_vars=["directory"],
-                tools=[
-                    self.architect.tools[0],  # analyze_architecture
-                    self.architect.tools[1],  # review_design
-                    self.architect.tools[2],  # suggest_improvements
-                    self.architect.tools[3]   # check_scalability
-                ]
-            )
-            
-            # Create crew for analysis
-            crew = Crew(
-                agents=[self.terraform_expert, self.architect],
-                tasks=[terraform_task, architect_task],
-                process=Process.sequential,
-                verbose=True
-            )
-            
-            # Run analysis
-            result = crew.kickoff()
-            return {"analysis": result}
-        except Exception as e:
-            raise RuntimeError(f"Error analyzing directory: {str(e)}") from e
+        Returns:
+            Agent instance
+        """
+        config = get_agent_config(role)
+        return Agent(
+            role=config['role'],
+            goal=config['goal'],
+            backstory=config['backstory'],
+            llm=config['llm'],
+            verbose=config['verbose'],
+            allow_delegation=config['allow_delegation'],
+            memory=config['memory'],
+            tools=self.tools
+        )
     
-    def generate_summary(self, analysis: Dict[str, Any]) -> str:
-        """Generate a summary of the analysis results"""
-        if not analysis:
-            return "No analysis available"
-        return analysis.get("analysis", "No analysis available")
+    def analyze(self) -> Dict[str, Any]:
+        """Analyze Terraform code in the directory using specialized agents
+        
+        Returns:
+            Analysis results containing security and cost recommendations
+        """
+        # Create specialized agents
+        security_agent = self.create_agent('security_expert')
+        cost_agent = self.create_agent('cost_expert')
+        
+        # Create analysis tasks
+        tasks = [
+            Task(
+                description=(
+                    f"Analyze security configurations in {self.directory} focusing on:\n"
+                    "1. IAM and access control best practices\n"
+                    "2. Network security and data protection\n"
+                    "3. Compliance with security standards\n"
+                    "4. Provider-agnostic security patterns"
+                ),
+                agent=security_agent,
+                expected_output=(
+                    "A detailed security analysis including:\n"
+                    "1. Security vulnerabilities and risks\n"
+                    "2. Best practices recommendations\n"
+                    "3. Compliance findings\n"
+                    "4. Specific improvement suggestions"
+                )
+            ),
+            Task(
+                description=(
+                    f"Analyze cost implications in {self.directory} focusing on:\n"
+                    "1. Resource sizing and utilization\n"
+                    "2. Cost-effective configurations\n"
+                    "3. Resource lifecycle management\n"
+                    "4. Provider-agnostic optimization patterns"
+                ),
+                agent=cost_agent,
+                expected_output=(
+                    "A comprehensive cost analysis including:\n"
+                    "1. Cost optimization opportunities\n"
+                    "2. Resource efficiency recommendations\n"
+                    "3. Lifecycle management suggestions\n"
+                    "4. Specific cost-saving measures"
+                )
+            )
+        ]
+        
+        # Create crew for sequential analysis
+        crew = Crew(
+            agents=[security_agent, cost_agent],
+            tasks=tasks,
+            process=Process.sequential,
+            verbose=True
+        )
+        
+        # Run analysis
+        result = crew.kickoff()
+        return self._process_result(result)
+    
+    def _process_result(self, result: List[str]) -> Dict[str, Any]:
+        """Process analysis results
+        
+        Args:
+            result: Raw analysis results from agents
+            
+        Returns:
+            Processed results with security and cost analyses
+        """
+        return {
+            'security_analysis': result[0] if len(result) > 0 else 'No security analysis available',
+            'cost_analysis': result[1] if len(result) > 1 else 'No cost analysis available'
+        }
