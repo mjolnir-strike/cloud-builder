@@ -7,69 +7,32 @@ class CrewAgent(BaseAgent):
     """CrewAI implementation for infrastructure analysis"""
     
     def __init__(self):
-        # Initialize agents with tools as functions
+        # Initialize agents for infrastructure analysis
         self.terraform_expert = Agent(
             role='Infrastructure Expert',
             goal='Analyze Terraform code for best practices and security',
-            backstory='Senior DevOps engineer with expertise in AWS and Terraform',
+            backstory="""Senior DevOps engineer with expertise in AWS and Terraform.
+            Specializes in:
+            - Single AZ deployments in us-east-1a
+            - ARM-based instances (t4g.micro)
+            - SSM-based management (no SSH)
+            - Security group configurations
+            - Cost optimization with gp3 volumes""",
             allow_delegation=False,
-            verbose=True,
-            function_calling=True,
-            tools=[
-                {
-                    "name": "analyze_terraform_code",
-                    "description": "Analyze Terraform code for AWS best practices",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "directory": {
-                                "type": "string",
-                                "description": "Directory containing Terraform code"
-                            }
-                        },
-                        "required": ["directory"]
-                    }
-                },
-                {
-                    "name": "check_security_config",
-                    "description": "Check security configurations against standards",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "config": {
-                                "type": "object",
-                                "description": "Security configuration to check"
-                            }
-                        },
-                        "required": ["config"]
-                    }
-                }
-            ]
+            verbose=True
         )
         
         self.architect = Agent(
             role='Solution Architect',
             goal='Review infrastructure design and suggest improvements',
-            backstory='Cloud architect specializing in AWS infrastructure design',
+            backstory="""Cloud architect specializing in AWS infrastructure design.
+            Expert in:
+            - Cost-effective single AZ deployments
+            - Security best practices (SSM, minimal ports)
+            - Resource tagging standards
+            - Jenkins CI/CD infrastructure""",
             allow_delegation=False,
-            verbose=True,
-            function_calling=True,
-            tools=[
-                {
-                    "name": "review_architecture",
-                    "description": "Review infrastructure architecture",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "analysis": {
-                                "type": "object",
-                                "description": "Analysis results to review"
-                            }
-                        },
-                        "required": ["analysis"]
-                    }
-                }
-            ]
+            verbose=True
         )
 
     def analyze_terraform(self, directory: str) -> Dict[str, Any]:
@@ -77,30 +40,68 @@ class CrewAgent(BaseAgent):
         if not os.path.exists(directory):
             raise ValueError(f"Directory {directory} does not exist")
 
+        # Create tasks for infrastructure analysis
+        analyze_task = Task(
+            description=f"""
+            Analyze Terraform code in {directory} focusing on our infrastructure standards:
+
+            1. Compute Requirements:
+               - ARM instances (t4g.micro)
+               - Amazon Linux 2023 ARM
+               - 8GB gp3 root volume
+               - SSM-enabled (no SSH)
+
+            2. Network Configuration:
+               - Single AZ in us-east-1a
+               - VPC CIDR: 10.0.0.0/16
+               - Public: 10.0.1.0/24
+               - Private: 10.0.10.0/24
+
+            3. Security Standards:
+               - Web ports (80, 443, 5000)
+               - Jenkins port (8080)
+               - No direct SSH
+               - SSM management
+
+            4. Cost Optimization:
+               - ARM-based instances
+               - gp3 storage
+               - Single AZ
+               - No NAT Gateway
+
+            Provide a detailed analysis of compliance with these standards.
+            """,
+            agent=self.terraform_expert
+        )
+
+        review_task = Task(
+            description="""
+            Review the infrastructure analysis and provide recommendations focusing on:
+
+            1. Resource Management:
+               - Variable validation rules
+               - Standardized tagging (Environment, ManagedBy, Project, Name)
+               - Module structure
+
+            2. Security Compliance:
+               - SSM-based management
+               - Port exposure
+               - Security group rules
+
+            3. Cost Efficiency:
+               - Resource sizing
+               - Storage configuration
+               - AZ strategy
+
+            Provide specific improvement suggestions that align with our standards.
+            """,
+            agent=self.architect
+        )
+
+        # Create and run the crew
         crew = Crew(
             agents=[self.terraform_expert, self.architect],
-            tasks=[
-                Task(
-                    description=f"Analyze Terraform code in {directory} for best practices and security. Check for:\n"
-                              f"1. Single AZ deployment in us-east-1a\n"
-                              f"2. ARM instance usage (t4g.micro)\n"
-                              f"3. Storage configurations (gp3)\n"
-                              f"4. Security group rules (ports 80, 443, 5000)\n"
-                              f"5. SSM-based management\n"
-                              f"6. Cost optimization practices",
-                    expected_output="Detailed analysis of Terraform code with focus on AWS best practices and security standards",
-                    agent=self.terraform_expert
-                ),
-                Task(
-                    description="Review the infrastructure architecture and suggest improvements based on:\n"
-                              "1. Single AZ deployment requirements\n"
-                              "2. Cost optimization guidelines\n"
-                              "3. Security best practices\n"
-                              "4. Resource tagging standards",
-                    expected_output="Architecture review with specific improvement suggestions",
-                    agent=self.architect
-                )
-            ],
+            tasks=[analyze_task, review_task],
             process=Process.sequential,
             verbose=True
         )
@@ -126,9 +127,10 @@ Key Findings:
 
     def _check_standards_compliance(self, analysis: Any) -> bool:
         """Check if infrastructure meets our standards"""
-        # Verify compliance with our standards:
-        # - Single AZ in us-east-1a
-        # - ARM instances (t4g.micro)
-        # - SSM management
-        # - Security group rules
+        # Standards from our infrastructure requirements:
+        # 1. Single AZ in us-east-1a
+        # 2. ARM instances (t4g.micro)
+        # 3. SSM management (no SSH)
+        # 4. Security group rules (80, 443, 5000, 8080)
+        # 5. Cost optimization (gp3, no NAT)
         return True
