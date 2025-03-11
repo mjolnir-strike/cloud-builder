@@ -9,10 +9,10 @@ def get_llm_config() -> Dict[str, Any]:
     Returns:
         LLM configuration
     """
-    model = os.getenv('OLLAMA_MODEL', 'qwen2.5')
+    model = os.getenv('OLLAMA_MODEL', 'llama3.2')
     base_url = os.getenv('OLLAMA_HOST', 'http://localhost:11434')
     return {
-        'model': model,
+        'model': f"ollama/{model}",  # Specify ollama as the provider
         'base_url': base_url,
         'temperature': 0.1,
         'request_timeout': int(os.getenv('ANALYSIS_TIMEOUT', '300'))
