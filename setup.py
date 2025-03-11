@@ -11,6 +11,7 @@ setup(
         "python-dotenv>=1.0.0",  # Environment variable management
         "pydantic>=2.6.0",  # Data validation
         "langchain_ollama>=0.1.1",  # Ollama integration
+        "langchain_openai>=0.1.0"  # For GPT-4-0-mini support
     ],
     extras_require={
         "dev": [

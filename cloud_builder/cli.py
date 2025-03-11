@@ -1,25 +1,9 @@
 """CLI for cloud-builder"""
 import os
 import click
-from pathlib import Path
-from typing import List
-from dotenv import load_dotenv
+from typing import Optional
 from .agents.crew_agent import CrewAgent
-import sys
-
-def find_terraform_files(directory: str) -> List[str]:
-    """Find Terraform files in directory
-    
-    Args:
-        directory: Directory to search
-        
-    Returns:
-        List of Terraform files
-    """
-    terraform_files = []
-    for path in Path(directory).rglob('*.tf'):
-        terraform_files.append(str(path.relative_to(directory)))
-    return terraform_files
+from dotenv import load_dotenv
 
 @click.group()
 def cli():
@@ -29,44 +13,70 @@ def cli():
     pass
 
 @cli.command()
-@click.argument('directory', type=click.Path(exists=True, file_okay=False, dir_okay=True))
-def analyze(directory: str):
+@click.argument('directory', type=click.Path(exists=True))
+@click.option('--agent', type=click.Choice(['crew', 'langchain']), default='crew', help='Agent type to use')
+def analyze(directory: str, agent: Optional[str] = 'crew'):
     """Analyze Terraform code in directory"""
+    # Find Terraform files
+    tf_files = []
+    for root, _, files in os.walk(directory):
+        for file in files:
+            if file.endswith('.tf') or file.endswith('.tfvars'):
+                tf_files.append(os.path.join(root, file))
+    
+    if not tf_files:
+        click.echo('No Terraform files found in directory')
+        return
+    
+    # Display found files
+    click.echo('Found {} Terraform-related files:'.format(len(tf_files)))
+    for file in tf_files:
+        click.echo('  - {}'.format(os.path.basename(file)))
+    click.echo()
+
+    # Display model being used
+    model = os.getenv('OLLAMA_MODEL', 'llama3.2')
+    click.echo(f'Using Ollama model {model} for analysis\n')
+
+    # Run analysis
     try:
-        # Find Terraform files
-        terraform_files = find_terraform_files(directory)
-        if not terraform_files:
-            click.echo("No Terraform files found")
-            sys.exit(1)
-        
-        click.echo("Found {} Terraform-related files:".format(len(terraform_files)))
-        for file in terraform_files:
-            click.echo(f"  - {file}")
-        click.echo()
-        
-        # Get model from environment
-        model = os.getenv('OLLAMA_MODEL', 'qwen2.5')
-        click.echo(f"Using Ollama model {model} for analysis")
-        
-        # Create agent and run analysis
-        agent = CrewAgent(directory)
-        results = agent.analyze()
-        
-        # Print results
-        click.echo("\nSecurity Analysis:")
-        click.echo("-" * 20)
-        click.echo(results['security_analysis'])
-        
-        click.echo("\nCost Analysis:")
-        click.echo("-" * 20)
-        click.echo(results['cost_analysis'])
-        
-    except ValueError as e:
-        click.echo(f"Configuration error: {str(e)}", err=True)
-        sys.exit(1)
+        if agent == 'crew':
+            agent = CrewAgent(directory)
+            result = agent.analyze()
+            
+            # Parse and display the analysis results
+            if isinstance(result['analysis'], str):
+                # Find the final answers in the output
+                security_analysis = ""
+                cost_analysis = ""
+                
+                # Extract security analysis
+                if "Security Expert\n## Final Answer:" in result['analysis']:
+                    security_analysis = result['analysis'].split("Security Expert\n## Final Answer:")[1].split("Cost Expert")[0].strip()
+                
+                # Extract cost analysis
+                if "Cost Expert\n## Final Answer:" in result['analysis']:
+                    cost_analysis = result['analysis'].split("Cost Expert\n## Final Answer:")[1].split("[")[0].strip()
+                
+                # Display security analysis
+                if security_analysis:
+                    click.echo('\nSecurity Analysis')
+                    click.echo('-----------------')
+                    click.echo(security_analysis)
+                
+                # Display cost analysis
+                if cost_analysis:
+                    click.echo('\nCost Analysis')
+                    click.echo('-------------')
+                    click.echo(cost_analysis)
+            else:
+                click.echo('\nAnalysis Results')
+                click.echo('----------------')
+                click.echo(str(result['analysis']))
+        else:
+            click.echo('LangChain agent not yet implemented')
     except Exception as e:
-        click.echo(f"Error analyzing directory: {str(e)}", err=True)
-        sys.exit(1)
+        click.echo(f'Error analyzing directory: {str(e)}')
 
 if __name__ == '__main__':
     cli()

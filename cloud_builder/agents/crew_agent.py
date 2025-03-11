@@ -47,40 +47,44 @@ class CrewAgent:
         security_agent = self.create_agent('security_expert')
         cost_agent = self.create_agent('cost_expert')
         
-        # Create analysis tasks
+        # Create analysis tasks with single-run focus
         tasks = [
             Task(
                 description=(
-                    f"Analyze security configurations in {self.directory} focusing on:\n"
+                    f"Perform a ONE-TIME security analysis of Terraform files in {self.directory}. Focus on:\n"
                     "1. IAM and access control best practices\n"
                     "2. Network security and data protection\n"
                     "3. Compliance with security standards\n"
-                    "4. Provider-agnostic security patterns"
+                    "4. Provider-agnostic security patterns\n"
+                    "Provide a SINGLE comprehensive analysis and stop."
                 ),
                 agent=security_agent,
                 expected_output=(
-                    "A detailed security analysis including:\n"
+                    "A single, comprehensive security analysis including:\n"
                     "1. Security vulnerabilities and risks\n"
                     "2. Best practices recommendations\n"
                     "3. Compliance findings\n"
-                    "4. Specific improvement suggestions"
+                    "4. Specific improvement suggestions\n"
+                    "Return results in a clear, structured format."
                 )
             ),
             Task(
                 description=(
-                    f"Analyze cost implications in {self.directory} focusing on:\n"
+                    f"Perform a ONE-TIME cost analysis of Terraform files in {self.directory}. Focus on:\n"
                     "1. Resource sizing and utilization\n"
                     "2. Cost-effective configurations\n"
                     "3. Resource lifecycle management\n"
-                    "4. Provider-agnostic optimization patterns"
+                    "4. Provider-agnostic optimization patterns\n"
+                    "Provide a SINGLE comprehensive analysis and stop."
                 ),
                 agent=cost_agent,
                 expected_output=(
-                    "A comprehensive cost analysis including:\n"
+                    "A single, comprehensive cost analysis including:\n"
                     "1. Cost optimization opportunities\n"
                     "2. Resource efficiency recommendations\n"
                     "3. Lifecycle management suggestions\n"
-                    "4. Specific cost-saving measures"
+                    "4. Specific cost-saving measures\n"
+                    "Return results in a clear, structured format."
                 )
             )
         ]
@@ -95,7 +99,7 @@ class CrewAgent:
         
         # Run analysis and process results
         result = crew.kickoff()
+        # Handle new CrewAI output format
         return {
-            'security_analysis': result.tasks[0].output if result.tasks else 'No security analysis available',
-            'cost_analysis': result.tasks[1].output if len(result.tasks) > 1 else 'No cost analysis available'
+            'analysis': result
         }
