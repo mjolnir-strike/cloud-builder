@@ -1,10 +1,10 @@
 # Cloud Builder CLI
 
-A Python-based CLI tool for analyzing infrastructure code using AI agents.
+A Python-based CLI tool for analyzing infrastructure code using AI agents, providing provider-agnostic recommendations for Terraform code.
 
 ## Features
 
-- Terraform code analysis using AI agents
+- Provider-agnostic Terraform code analysis
 - Infrastructure best practices validation
 - Security standards assessment
 - Architecture review
@@ -70,10 +70,10 @@ cloud-build analyze --help
 
 ## Analysis Features
 
-The tool analyzes infrastructure code focusing on:
+The tool performs provider-agnostic analysis focusing on:
 
 1. Resource Configuration:
-   - Instance types and sizing
+   - Resource types and sizing
    - Storage configurations
    - Network architecture
    - Service integrations
@@ -104,6 +104,7 @@ This project follows infrastructure best practices:
 - Development in virtual environment
 - Regular dependency updates
 - Error handling best practices
+- Provider-agnostic code analysis
 
 ## Security
 
