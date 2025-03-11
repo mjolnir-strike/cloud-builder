@@ -1,5 +1,5 @@
 import click
-from typing import Optional
+from typing import Optional, List
 from .agents import AgentFactory
 import os
 import glob
@@ -8,10 +8,24 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
+def _find_terraform_files(directory: str) -> List[str]:
+    """Find all Terraform files in directory"""
+    patterns = [
+        "**/*.tf",           # Terraform files
+        "**/variables.tf",   # Variable definitions
+        "**/outputs.tf",     # Output definitions
+        "**/terraform.tfvars",  # Variable values
+        "**/modules/**/*/",  # Module directories
+    ]
+    
+    files = []
+    for pattern in patterns:
+        files.extend(glob.glob(os.path.join(directory, pattern), recursive=True))
+    return list(set(files))  # Remove duplicates
+
 def _contains_terraform_files(directory: str) -> bool:
     """Check if directory contains Terraform files"""
-    tf_files = glob.glob(os.path.join(directory, "**/*.tf"), recursive=True)
-    return len(tf_files) > 0
+    return len(_find_terraform_files(directory)) > 0
 
 @click.group()
 def cli():
@@ -39,11 +53,18 @@ def analyze(directory: str, agent: str):
             )
 
         # Validate directory contains Terraform files
-        if not _contains_terraform_files(directory):
+        tf_files = _find_terraform_files(directory)
+        if not tf_files:
             raise click.ClickException(
-                f"No Terraform files (*.tf) found in {directory}. "
+                f"No Terraform files found in {directory}. "
                 "Please provide a directory containing Terraform code."
             )
+
+        # Log found Terraform files
+        click.echo(f"Found {len(tf_files)} Terraform-related files:")
+        for file in sorted(tf_files):
+            click.echo(f"  - {os.path.relpath(file, directory)}")
+        click.echo()
 
         # Create and run the appropriate agent
         agent_instance = AgentFactory.create_agent(agent)
